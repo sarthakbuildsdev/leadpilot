@@ -15,6 +15,15 @@ Every account is private: LeadPilot uses **session-based authentication**, and e
 - Search, status/source/follow-up filters, and sortable columns
 - Follow-up view grouped into Overdue / Today / Upcoming
 
+
+## 📸 Screenshots
+
+### Dashboard
+![LeadPilot Dashboard](screenshots/dashboard.png)
+
+### Leads Management
+![LeadPilot Leads Page](screenshots/leads.png)
+
 ## What you need
 
 - Node.js 20 or newer (the test suite uses the built-in `node --test` runner)
