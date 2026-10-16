@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeadPilot — Client CRM</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">✦ LeadPilot<span>CLIENT MANAGEMENT</span></div>
+      <button class="nav active" data-view="dashboard">Dashboard</button>
+      <button class="nav" data-view="leads">Leads</button>
+      <button class="nav" data-view="followups">Follow-ups</button>
+      <div class="side-note">Your workspace to turn potential clients into successful deals.</div>
+      <div class="side-badge">Signed-in workspace. Leads in this account stay private to you.</div>
+    </aside>
+
+    <main>
+      <header class="top">
+        <div>
+          <button class="menu-toggle" id="menuToggle" type="button">Menu</button>
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle">Track your pipeline, follow-ups, and closed revenue.</p>
+        </div>
+        <div class="top-actions">
+          <div class="user-chip" id="userChip">Signed in</div>
+          <button class="small" id="logoutBtn" type="button">Log out</button>
+          <button class="primary" id="addBtn" type="button">+ Add Lead</button>
+        </div>
+      </header>
+
+      <div class="loading-bar" id="loadingBar"></div>
+
+      <section id="page-dashboard" class="page active">
+        <div class="stats">
+          <div class="card"><div class="stat-label">Total leads</div><div class="stat-number" id="statTotal">0</div><div class="stat-hint">All prospects</div></div>
+          <div class="card"><div class="stat-label">New</div><div class="stat-number" id="statNew">0</div><div class="stat-hint">Not contacted yet</div></div>
+          <div class="card"><div class="stat-label">Contacted</div><div class="stat-number" id="statContacted">0</div><div class="stat-hint">Outreach started</div></div>
+          <div class="card"><div class="stat-label">Interested</div><div class="stat-number" id="statInterested">0</div><div class="stat-hint">Potential deals</div></div>
+          <div class="card"><div class="stat-label">Won deals</div><div class="stat-number" id="statWon">0</div><div class="stat-hint">Successfully closed</div></div>
+          <div class="card"><div class="stat-label">Lost deals</div><div class="stat-number" id="statLost">0</div><div class="stat-hint">Did not convert</div></div>
+          <div class="card"><div class="stat-label">Won revenue</div><div class="stat-number" id="statRevenue">₹0</div><div class="stat-hint">Closed-won amount</div></div>
+          <div class="card"><div class="stat-label">Pipeline value</div><div class="stat-number" id="statPipeline">₹0</div><div class="stat-hint">Active estimated value</div></div>
+        </div>
+        <div class="stats">
+          <div class="card"><div class="stat-label">Overdue follow-ups</div><div class="stat-number" id="statOverdue">0</div><div class="stat-hint danger">Needs attention</div></div>
+          <div class="card"><div class="stat-label">Due today</div><div class="stat-number" id="statToday">0</div><div class="stat-hint warn">Call these first</div></div>
+        </div>
+        <div class="charts">
+          <div class="card">
+            <h2>Leads by status</h2>
+            <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+            <div class="legend" id="statusLegend"></div>
+          </div>
+          <div class="card">
+            <h2>Leads by source</h2>
+            <div class="chart-wrap"><canvas id="sourceChart"></canvas></div>
+          </div>
+        </div>
+        <section class="card" style="margin-top:14px">
+          <div class="section-head"><h2>Recent leads</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Contact</th><th>Business</th><th>Status</th>
+                  <th>Value</th><th>Follow-up</th><th>Created</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="recentRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="page-leads" class="page">
+        <section class="card">
+          <div class="section-head">
+            <h2>All leads</h2>
+            <div class="controls">
+              <input id="search" class="search" placeholder="Search name, business, email, phone...">
+              <select id="filterStatus">
+                <option value="All">All statuses</option>
+                <option>New</option><option>Contacted</option>
+                <option>Interested</option><option>Won</option><option>Lost</option>
+              </select>
+              <select id="filterSource">
+                <option value="All">All sources</option>
+                <option>Website</option><option>Referral</option><option>LinkedIn</option>
+                <option>Instagram</option><option>Cold Call</option><option>Email</option><option>Other</option>
+              </select>
+              <select id="filterFollowup">
+                <option value="all">Any follow-up</option>
+                <option value="overdue">Overdue</option>
+                <option value="today">Today</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="none">No date set</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead id="leadTableHead">
+                <tr>
+                  <th><button type="button" data-sort="name">Contact</button></th>
+                  <th><button type="button" data-sort="business">Business</button></th>
+                  <th><button type="button" data-sort="status">Status</button></th>
+                  <th><button type="button" data-sort="amount">Value</button></th>
+                  <th><button type="button" data-sort="followup_date">Follow-up</button></th>
+                  <th><button type="button" data-sort="created_at">Created</button></th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <footer class="meta" id="count">0 leads</footer>
+        </section>
+      </section>
+
+      <section id="page-followups" class="page">
+        <div id="followupList"></div>
+      </section>
+
+      <footer class="meta">LeadPilot · Session accounts · Data stored in PostgreSQL, scoped to your user</footer>
+    </main>
+  </div>
+
+  <dialog id="leadDialog">
+    <h2 id="dialogTitle" style="margin-bottom:16px">Add a lead</h2>
+    <form id="leadForm">
+      <input type="hidden" id="leadId">
+      <div class="form-row">
+        <label>Contact name *
+          <input id="name" required maxlength="80" placeholder="e.g. Rahul Sharma">
+        </label>
+        <label>Business / company *
+          <input id="business" required maxlength="100" placeholder="e.g. Rahul Events">
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Phone
+          <input id="phone" type="tel" maxlength="20" placeholder="Contact number">
+        </label>
+        <label>Email
+          <input id="email" type="email" maxlength="254" placeholder="name@company.com">
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Source
+          <select id="source">
+            <option value="">Unspecified</option>
+            <option>Website</option><option>Referral</option><option>LinkedIn</option>
+            <option>Instagram</option><option>Cold Call</option><option>Email</option><option>Other</option>
+          </select>
+        </label>
+        <label>Status
+          <select id="status">
+            <option>New</option><option>Contacted</option>
+            <option>Interested</option><option>Won</option><option>Lost</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Estimated deal amount (₹)
+          <input id="amount" type="number" min="0" max="100000000" step="1" value="0">
+        </label>
+        <label>Next follow-up date
+          <input id="followup" type="date">
+        </label>
+      </div>
+      <label>Notes
+        <textarea id="notes" maxlength="4000" placeholder="Context, next steps, objections..."></textarea>
+      </label>
+      <div class="field-error" id="formError"></div>
+      <div class="form-actions">
+        <button type="button" class="small" id="cancelBtn">Cancel</button>
+        <button class="primary" type="submit" id="saveBtn">Save Lead</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="viewDialog">
+    <h2 id="viewTitle" style="margin-bottom:16px">Lead</h2>
+    <div id="viewBody"></div>
+    <div class="form-actions">
+      <button type="button" class="small" id="closeView">Close</button>
+      <button type="button" class="primary" id="viewEdit">Edit</button>
+    </div>
+  </dialog>
+
+  <dialog id="deleteDialog">
+    <h2 style="margin-bottom:12px">Delete lead?</h2>
+    <p id="deleteText">This cannot be undone.</p>
+    <div class="form-actions">
+      <button type="button" class="small" id="cancelDelete">Cancel</button>
+      <button type="button" class="small danger" id="confirmDelete">Delete</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

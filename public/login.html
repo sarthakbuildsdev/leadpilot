@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeadPilot — Sign in</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="card auth-card">
+      <div class="brand">✦ LeadPilot<span>CLIENT MANAGEMENT</span></div>
+      <h1>Sign in</h1>
+      <p>Use your account to open your private pipeline. Other users cannot see your leads.</p>
+      <form id="authForm" data-endpoint="/api/auth/login">
+        <label>Email
+          <input id="email" name="email" type="email" maxlength="254" autocomplete="email" required>
+        </label>
+        <label>Password
+          <input id="password" name="password" type="password" maxlength="72" autocomplete="current-password" required>
+        </label>
+        <div class="field-error" id="formError"></div>
+        <button class="primary" type="submit" id="submitBtn">Sign in</button>
+      </form>
+      <p class="auth-switch">New to LeadPilot? <a href="/signup">Create an account</a></p>
+    </section>
+  </main>
+  <script src="/auth.js"></script>
+</body>
+</html>
