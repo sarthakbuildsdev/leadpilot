@@ -5,6 +5,7 @@ const { publicDbError } = require("./db");
 const { validateRegister, validateLogin } = require("./authValidate");
 const { hashPassword, verifyPassword } = require("./passwords");
 const { createCsrfToken, ensureCsrfToken } = require("./csrf");
+const { isUuid } = require("./validate");
 
 function publicUser(row) {
   return {
@@ -33,18 +34,30 @@ function destroySession(req) {
   });
 }
 
-function createAuthRoutes({ pool, bcryptRounds, loginLimiter }) {
+function createAuthRoutes({ pool, bcryptRounds, loginLimiter, cookieName = "leadpilot.sid", cookieSecure = false }) {
   const limiter = loginLimiter || ((_req, _res, next) => next());
   const router = express.Router();
+  const clearCookieOptions = { httpOnly: true, sameSite: "lax", secure: Boolean(cookieSecure), path: "/" };
 
   router.get("/csrf", async (req, res) => {
-    const token = ensureCsrfToken(req);
-    await saveSession(req);
-    res.json({ success: true, token });
+    try {
+      const token = ensureCsrfToken(req);
+      await saveSession(req);
+      res.json({ success: true, token });
+    } catch (error) {
+      const mapped = publicDbError(error);
+      res.status(mapped.status).json({
+        success: false,
+        error:
+          mapped.status === 500
+            ? "Could not save your session. Confirm PostgreSQL is running and try again."
+            : mapped.message
+      });
+    }
   });
 
   router.get("/me", async (req, res) => {
-    if (!req.session.userId) {
+    if (!req.session.userId || !isUuid(req.session.userId)) {
       return res.status(401).json({ success: false, error: "Please sign in." });
     }
 
@@ -54,8 +67,8 @@ function createAuthRoutes({ pool, bcryptRounds, loginLimiter }) {
         [req.session.userId]
       );
       if (!rows[0]) {
-        await destroySession(req);
-        res.clearCookie("leadpilot.sid");
+        await destroySession(req).catch(() => {});
+        res.clearCookie(cookieName, clearCookieOptions);
         return res.status(401).json({ success: false, error: "Please sign in." });
       }
       res.json({ success: true, user: publicUser(rows[0]) });
@@ -136,8 +149,9 @@ function createAuthRoutes({ pool, bcryptRounds, loginLimiter }) {
   });
 
   router.post("/logout", async (req, res) => {
-    await destroySession(req);
-    res.clearCookie("leadpilot.sid");
+    // Always clear the cookie, even if the store already dropped the session.
+    await destroySession(req).catch(() => {});
+    res.clearCookie(cookieName, clearCookieOptions);
     res.json({ success: true });
   });
 

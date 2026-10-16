@@ -7,7 +7,7 @@ const rateLimit = require("express-rate-limit");
 const { createRoutes } = require("./routes");
 const { createAuthRoutes } = require("./authRoutes");
 const { csrfProtect } = require("./csrf");
-const { sessionMiddleware } = require("./session");
+const { sessionMiddleware, SESSION_COOKIE_NAME } = require("./session");
 
 function requirePageAuth(req, res, next) {
   if (!req.session?.userId) {
@@ -83,7 +83,16 @@ function createApp({
         message: { success: false, error: "Too many attempts. Try again in a few minutes." }
       });
 
-  app.use("/api/auth", createAuthRoutes({ pool, bcryptRounds, loginLimiter: authLimiter }));
+  app.use(
+    "/api/auth",
+    createAuthRoutes({
+      pool,
+      bcryptRounds,
+      loginLimiter: authLimiter,
+      cookieName: SESSION_COOKIE_NAME,
+      cookieSecure
+    })
+  );
   app.use("/api", createRoutes(pool));
 
   app.get("/login", redirectIfAuthed, (_req, res) => {

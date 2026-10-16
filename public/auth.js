@@ -1,8 +1,13 @@
 async function getCsrfToken() {
   const response = await fetch("/api/auth/csrf", { credentials: "same-origin" });
-  const payload = await response.json();
-  if (!response.ok || !payload.token) {
-    throw new Error(payload.error || "Could not start a secure session.");
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload?.token) {
+    throw new Error(
+      payload?.error ||
+        (response.ok
+          ? "Could not start a secure session."
+          : `Could not start a secure session (${response.status}). Check that the server is running and PostgreSQL is reachable.`)
+    );
   }
   return payload.token;
 }

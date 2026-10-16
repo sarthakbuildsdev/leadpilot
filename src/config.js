@@ -26,6 +26,10 @@ function loadConfig() {
       process.env.NODE_ENV === "production",
     bcryptRounds: Number.isInteger(bcryptRounds) && bcryptRounds >= 4 ? bcryptRounds : 12,
     pg: {
+      // Optional single-URL form. When set (for example on a hosted database),
+      // it takes precedence over the individual PG* values below. Leave it
+      // empty for the local PostgreSQL install, which uses PGHOST/PGPORT/...
+      connectionString: requiredEnv("DATABASE_URL", ""),
       host: requiredEnv("PGHOST", "localhost"),
       port: Number(requiredEnv("PGPORT", "5432")) || 5432,
       user: requiredEnv("PGUSER", "postgres"),
