@@ -56,8 +56,12 @@ function parseAmount(value) {
   return Math.round(amount * 100) / 100;
 }
 
+function isUuid(value) {
+  return typeof value === "string" && UUID_RE.test(value.trim());
+}
+
 function validateId(id) {
-  if (!id || !UUID_RE.test(String(id))) {
+  if (!isUuid(id === undefined || id === null ? "" : String(id))) {
     return "Invalid lead id.";
   }
   return null;
@@ -225,5 +229,6 @@ module.exports = {
   validateId,
   validateLeadPayload,
   parseListQuery,
-  escapeLike
+  escapeLike,
+  isUuid
 };

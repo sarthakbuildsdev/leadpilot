@@ -3,24 +3,43 @@
 const { Pool } = require("pg");
 const { loadConfig } = require("./config");
 
+const AUTH_ERROR_CODES = new Set([
+  "28P01", // invalid password
+  "28000" // invalid authorization specification
+]);
+
 function createPool(overrides = {}) {
   const { pg } = loadConfig();
 
-  return new Pool({
-    host: overrides.host ?? pg.host,
-    port: overrides.port ?? pg.port,
-    user: overrides.user ?? pg.user,
-    password: overrides.password ?? pg.password,
-    database: overrides.database ?? pg.database,
+  const settings = {
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 8000,
     statement_timeout: 15000
+  };
+
+  const connectionString = overrides.connectionString ?? pg.connectionString;
+  if (connectionString) {
+    return new Pool({ ...settings, connectionString });
+  }
+
+  return new Pool({
+    ...settings,
+    host: overrides.host ?? pg.host,
+    port: overrides.port ?? pg.port,
+    user: overrides.user ?? pg.user,
+    password: overrides.password ?? pg.password,
+    database: overrides.database ?? pg.database
   });
 }
 
 function isAuthError(error) {
-  return error?.code === "28P01" || /password|authentication/i.test(error?.message || "");
+  if (AUTH_ERROR_CODES.has(error?.code)) {
+    return true;
+  }
+  // node-postgres also surfaces SCRAM failures as plain messages, for example:
+  // "SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string".
+  return /password|authentication|SASL|SCRAM/i.test(error?.message || "");
 }
 
 function publicDbError(error) {
@@ -44,6 +63,14 @@ function publicDbError(error) {
       status: 503,
       message:
         "PostgreSQL is not reachable on the configured host/port. Start the PostgreSQL service and try again."
+    };
+  }
+
+  if (["ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT", "EHOSTUNREACH"].includes(error?.code)) {
+    return {
+      status: 503,
+      message:
+        "PostgreSQL host could not be reached. Check PGHOST / PGPORT (or DATABASE_URL) in your .env file."
     };
   }
 

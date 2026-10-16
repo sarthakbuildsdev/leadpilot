@@ -1,8 +1,15 @@
 "use strict";
 
-const { escapeLike } = require("./validate");
+const { escapeLike, isUuid } = require("./validate");
 
+// Every lead query is scoped to a signed-in owner. Any caller that omits the
+// authenticated user id would risk returning another account's rows, so this
+// throws instead of silently running an unscoped query.
 function buildListQuery(filters, userId) {
+  if (!isUuid(userId)) {
+    throw new Error("buildListQuery requires a valid authenticated userId");
+  }
+
   const where = ["user_id = $1"];
   const params = [userId];
   let index = 2;

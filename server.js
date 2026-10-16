@@ -18,10 +18,24 @@ async function main() {
     process.exit(1);
   }
 
-  const pool = createPool();
+  const { pg } = config;
+  const target = pg.connectionString
+    ? "the database in DATABASE_URL"
+    : `${pg.host}:${pg.port}/${pg.database} as user "${pg.user}"`;
+
+  if (!pg.connectionString && !pg.password) {
+    console.warn(
+      "Warning: PGPASSWORD is empty. If your PostgreSQL server requires a password (SCRAM/MD5), the connection below will fail. Set PGPASSWORD in .env (never commit it)."
+    );
+  }
+
+  const pool = createPool(config.pg);
 
   try {
+    // initDb opens a real connection and runs statements, so a successful
+    // return doubles as the connectivity check for the configured database.
     await initDb(pool);
+    await pool.query("SELECT 1");
     const unowned = await pool.query(
       "SELECT COUNT(*)::int AS count FROM leads WHERE user_id IS NULL"
     );
@@ -31,16 +45,23 @@ async function main() {
         `Warning: ${count} lead(s) have no owner (user_id IS NULL). They stay in PostgreSQL but will not appear for any signed-in account until you assign ownership. LeadPilot will not auto-assign them.`
       );
     }
+    console.log(`Connected to PostgreSQL (${target}).`);
   } catch (error) {
     if (isAuthError(error)) {
       console.error(
-        "PostgreSQL authentication failed. Copy .env.example to .env, set PGPASSWORD to your postgres user password, and restart. Do not put the password in frontend code or commit it to Git."
+        `PostgreSQL authentication failed for ${target}. Copy .env.example to .env, set PGPASSWORD to your postgres user password, and restart. Do not put the password in frontend code or commit it to Git.`
       );
     } else if (error.code === "3D000") {
-      console.error("The 'leadpilot' database was not found. Create it in PostgreSQL, then restart.");
+      console.error(
+        `The database "${pg.database}" was not found on ${pg.host}:${pg.port}. Create it in PostgreSQL, then restart.`
+      );
     } else if (error.code === "ECONNREFUSED") {
       console.error(
-        `Could not reach PostgreSQL at ${config.pg.host}:${config.pg.port}. Start the PostgreSQL Windows service and try again.`
+        `Could not reach PostgreSQL at ${target}. Start the PostgreSQL service (for example the "postgresql-x64-18" Windows service) and try again.`
+      );
+    } else if (["ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT", "EHOSTUNREACH"].includes(error.code)) {
+      console.error(
+        `PostgreSQL host could not be reached (${target}). Check PGHOST / PGPORT in .env.`
       );
     } else {
       console.error("Failed to initialize the database:", error.message);

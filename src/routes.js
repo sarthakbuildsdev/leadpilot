@@ -6,7 +6,8 @@ const { buildListQuery } = require("./leadsQuery");
 const {
   validateId,
   validateLeadPayload,
-  parseListQuery
+  parseListQuery,
+  isUuid
 } = require("./validate");
 
 function mapLead(row) {
@@ -29,7 +30,10 @@ function mapLead(row) {
 }
 
 function requireAuth(req, res, next) {
-  if (!req.session?.userId) {
+  // A signed-in session must carry a real user UUID. Anything else (missing,
+  // tampered, or legacy value) is treated as signed out so no query can run
+  // without a trustworthy owner id.
+  if (!req.session?.userId || !isUuid(req.session.userId)) {
     return res.status(401).json({ success: false, error: "Please sign in." });
   }
   return next();
